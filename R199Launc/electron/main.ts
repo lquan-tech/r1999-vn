@@ -2,7 +2,15 @@ import { app, BrowserWindow, ipcMain, shell, dialog } from 'electron';
 import path from 'node:path';
 import fs from 'node:fs';
 import crypto from 'node:crypto';
-import { spawn, execFile } from 'node:child_process';
+import { spawn, execFile, exec } from 'node:child_process';
+
+// Chặn hiển thị popup lỗi JavaScript thô của Electron ra màn hình
+process.on('uncaughtException', (err) => {
+  console.error('[viLauncher] Uncaught Exception:', err);
+});
+process.on('unhandledRejection', (reason) => {
+  console.error('[viLauncher] Unhandled Rejection:', reason);
+});
 
 const REPOSITORY_URL = 'https://github.com/dat514/Reverse-1999-Vi-t-H-a';
 
@@ -522,17 +530,41 @@ ipcMain.handle('launcher:launch-game', async () => {
     return { success: false, error: 'Không tìm thấy reverse1999.exe trong thư mục đã chọn.' };
   }
 
-  try {
-    const child = spawn(exePath, [], {
-      cwd: configuredGamePath,
-      detached: true,
-      stdio: 'ignore',
-    });
-    child.unref();
-    return { success: true };
-  } catch (err: any) {
-    return { success: false, error: err?.message || 'Lỗi khi khởi chạy game' };
-  }
+  return new Promise((resolve) => {
+    // reverse1999.exe yêu cầu quyền Administrator (manifest requireAdministrator).
+    // Node.js spawn() gọi trực tiếp CreateProcessW và sẽ văng lỗi ERROR_ELEVATION_REQUIRED (740) -> EACCES.
+    // Sử dụng PowerShell Start-Process (ShellExecuteEx) để Windows kích hoạt UAC prompt cho game một cách tự nhiên.
+    const psCmd = `try { Start-Process -FilePath '${exePath.replace(/'/g, "''")}' -WorkingDirectory '${configuredGamePath.replace(/'/g, "''")}'; exit 0 } catch { exit 1223 }`;
+    execFile(
+      'powershell.exe',
+      ['-NoProfile', '-ExecutionPolicy', 'Bypass', '-Command', psCmd],
+      { windowsHide: true },
+      (err) => {
+        if (err) {
+          if ((err as any).code === 1223 || String(err).includes('1223')) {
+            resolve({
+              success: false,
+              error: 'Bạn đã từ chối cấp quyền Administrator trong bảng xác nhận UAC khi khởi chạy game.',
+            });
+            return;
+          }
+          // Fallback sang cmd /c start
+          exec(`start "" /d "${configuredGamePath}" "${exePath}"`, (cmdErr) => {
+            if (cmdErr) {
+              resolve({
+                success: false,
+                error: `Không thể khởi chạy game (${cmdErr.message}). Hãy cấp quyền khi bảng UAC xuất hiện.`,
+              });
+            } else {
+              resolve({ success: true });
+            }
+          });
+        } else {
+          resolve({ success: true });
+        }
+      }
+    );
+  });
 });
 
 // Bluepoch Hotupdate API Integration (hotupdate-hw.sl916.com)
