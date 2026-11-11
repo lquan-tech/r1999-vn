@@ -149,13 +149,13 @@ if _missing:
 print(f"WORKSPACE : {WORKSPACE}")
 print(f"GAME_PATH : {GAME_PATH}")
 
-USER_REPO = "https://github.com/dat514/Reverse-1999-Vi-t-H-a"
+USER_REPO = "https://github.com/lquan-tech/viLauncher"
 
 # 2. TỪ ĐIỂN CỤM TỪ ANTI-SCAM, LOADING & SCREENSHOT
 SPECIAL_OVERRIDE_STRINGS = [
     # Bảng thông báo / Anti-scam modal
     ("Сообщение из глубин ада", "CẢNH BÁO LỪA ĐẢO"),
-    ("Привет~ Доступно обновление!\n0.1.18.1 -> 0.1.18.2\nОбновить?", "BẢN DỊCH TIẾNG VIỆT HOÀN TOÀN MIỄN PHÍ\nNếu bạn phải trả tiền để mua bản dịch này từ bất kỳ ai, bạn đã bị lừa đảo!\n\nGitHub chính thức: dat514/Reverse-1999-Vi-t-H-a"),
+    ("Привет~ Доступно обновление!\n0.1.18.1 -> 0.1.18.2\nОбновить?", "BẢN DỊCH TIẾNG VIỆT HOÀN TOÀN MIỄN PHÍ\nNếu bạn phải trả tiền để mua bản dịch này từ bất kỳ ai, bạn đã bị lừa đảo!\n\nGitHub chính thức: lquan-tech/viLauncher"),
     ("Привет~ Доступно обновление!", "BẢN DỊCH TIẾNG VIỆT HOÀN TOÀN MIỄN PHÍ"),
     ("Обновить?", ""),
     ("Потом", ""),

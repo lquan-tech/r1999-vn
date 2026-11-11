@@ -74,6 +74,7 @@ def update_carrier_if_needed():
                         client_version = f"{parts[0]}.{parts[1]}.{parts[2]}"
 
         data["gameVersion"] = client_version
+        data["url"] = "https://github.com/lquan-tech/viLauncher"
 
         # Bổ sung các chuỗi tiếng Nga / cảnh báo còn sót vào từ điển 'l'
         overrides = {
@@ -171,7 +172,15 @@ def main():
     env = UnityPy.load(data)
     replaced_count = 0
 
-    print("\n[2/3] Đang thay thế textures và cập nhật carrier TextAsset...")
+    print("\n[2/3] Đang thay thế textures, cập nhật carrier TextAsset và triệt tiêu FCK OFF...")
+    KILL_GO_NAMES = ["flavor_text", "flav1", "flav2", "VersionText"]
+    BUTTON_GO_NAMES = ["buttons", "CloseButton", "MinimizeButton", "Church", "Export", "BtnDisable"]
+    go_names = {}
+    for obj in env.objects:
+        if obj.type.name == "GameObject":
+            tree = obj.read_typetree()
+            go_names[obj.path_id] = tree.get("m_Name", "")
+
     for obj in env.objects:
         if obj.type.name == "TextAsset":
             d = obj.read()
@@ -180,7 +189,62 @@ def main():
                 tree = obj.read_typetree()
                 tree["m_Script"] = bytes(new_banner_bytes).decode("utf8", "surrogateescape")
                 obj.save_typetree(tree)
-                print(f"   ✓ [TextAsset] Đã nạp carrier mới (đồng bộ gameVersion, xóa FCK OFF & chữ Nga)")
+                print(f"   ✓ [TextAsset] Đã nạp carrier mới (URL repo lquan-tech, xóa FCK OFF & chữ Nga)")
+
+        elif obj.type.name == "GameObject":
+            tree = obj.read_typetree()
+            name = tree.get("m_Name", "")
+            if name in KILL_GO_NAMES or name in BUTTON_GO_NAMES:
+                tree["m_IsActive"] = False
+                obj.save_typetree(tree)
+
+        elif obj.type.name == "RectTransform":
+            tree = obj.read_typetree()
+            go_pid = tree.get("m_GameObject", {}).get("m_PathID")
+            go_name = go_names.get(go_pid, "")
+            if go_name in KILL_GO_NAMES or go_name in BUTTON_GO_NAMES:
+                tree["m_LocalScale"] = {"x": 0.0, "y": 0.0, "z": 0.0}
+                tree["m_SizeDelta"] = {"x": 0.0, "y": 0.0}
+                tree["m_AnchoredPosition"] = {"x": -9999.0, "y": -9999.0}
+                obj.save_typetree(tree)
+            elif go_name == "LinkText":
+                tree["m_LocalScale"] = {"x": 1.0, "y": 1.0, "z": 1.0}
+                tree["m_SizeDelta"] = {"x": 650.0, "y": 30.0}
+                obj.save_typetree(tree)
+
+        elif obj.type.name == "MonoBehaviour":
+            try:
+                tree = obj.read_typetree()
+                go_pid = tree.get("m_GameObject", {}).get("m_PathID")
+                go_name = go_names.get(go_pid, "")
+                if go_name in KILL_GO_NAMES:
+                    tree["m_Text"] = ""
+                    if "m_Color" in tree:
+                        tree["m_Color"] = {"r": 0.0, "g": 0.0, "b": 0.0, "a": 0.0}
+                    if "m_FontData" in tree:
+                        tree["m_FontData"]["m_FontSize"] = 0
+                        tree["m_FontData"]["m_MinSize"] = 0
+                        tree["m_FontData"]["m_MaxSize"] = 0
+                        tree["m_FontData"]["m_Font"] = {"m_FileID": 0, "m_PathID": 0}
+                    tree["m_Enabled"] = 0
+                    obj.save_typetree(tree)
+                elif go_name == "Label" and "срамоту" in str(tree.get("m_Text", "")):
+                    tree["m_Text"] = ""
+                    tree["m_Color"] = {"r": 0.0, "g": 0.0, "b": 0.0, "a": 0.0}
+                    if "m_FontData" in tree:
+                        tree["m_FontData"]["m_Font"] = {"m_FileID": 0, "m_PathID": 0}
+                    tree["m_Enabled"] = 0
+                    obj.save_typetree(tree)
+                elif go_name == "LinkText":
+                    tree["m_Enabled"] = 1
+                    if "m_Color" in tree:
+                        tree["m_Color"] = {"r": 0.85, "g": 0.85, "b": 0.85, "a": 0.95}
+                    if "m_FontData" in tree:
+                        tree["m_FontData"]["m_FontSize"] = 14
+                        tree["m_FontData"]["m_Font"] = {"m_FileID": 1, "m_PathID": 10102}
+                    obj.save_typetree(tree)
+            except Exception:
+                pass
 
         elif obj.type.name == "Texture2D":
             d = obj.read()

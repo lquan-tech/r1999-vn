@@ -12,7 +12,7 @@ process.on('unhandledRejection', (reason) => {
   console.error('[viLauncher] Unhandled Rejection:', reason);
 });
 
-const REPOSITORY_URL = 'https://github.com/dat514/Reverse-1999-Vi-t-H-a';
+const REPOSITORY_URL = 'https://github.com/lquan-tech/viLauncher';
 
 const MOD_CONTAINER_NAME = '6ac5a62c64b72b07e9383583eef5c3ac.dat';
 const MOD_BUNDLE_NAME = '7335e2dfbf8ec0e4389bc697130b63e2.dat';
@@ -953,7 +953,7 @@ ipcMain.handle('launcher:check-github-update', async () => {
   const currentLauncherVersion = '1.0.0';
   const currentModVersion = '0.1.18.2';
   try {
-    const res = await fetch('https://api.github.com/repos/dat514/Reverse-1999-Vi-t-H-a/releases/latest', {
+    const res = await fetch('https://api.github.com/repos/lquan-tech/viLauncher/releases/latest', {
       headers: { 'User-Agent': 'Reverse1999-Launcher', Accept: 'application/json' },
       signal: AbortSignal.timeout(6000),
     });
