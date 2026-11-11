@@ -1,0 +1,70 @@
+{
+  "name": "reverse-1999-viet-hoa-launcher",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Reverse: 1999 community localization launcher UI",
+  "main": "dist-electron/main.cjs",
+  "scripts": {
+    "dev": "concurrently -k \"vite --host 127.0.0.1\" \"wait-on http://127.0.0.1:5173 && cross-env VITE_DEV_SERVER_URL=http://127.0.0.1:5173 electron .\"",
+    "build": "tsc --noEmit && vite build && esbuild electron/main.ts electron/preload.ts --bundle --platform=node --format=cjs --external:electron --outdir=dist-electron --out-extension:.js=.cjs",
+    "preview": "vite preview",
+    "dist": "npm run build && electron-builder --win nsis",
+    "package-exe": "node ../package_exe.mjs"
+  },
+  "dependencies": {
+    "lucide-react": "^0.468.0",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
+  },
+  "devDependencies": {
+    "@types/react": "^18.3.31",
+    "@types/react-dom": "^18.3.7",
+    "@vitejs/plugin-react": "^4.3.4",
+    "concurrently": "^9.1.2",
+    "cross-env": "^7.0.3",
+    "electron": "^33.2.1",
+    "electron-builder": "^25.1.8",
+    "esbuild": "^0.24.2",
+    "typescript": "~5.7.2",
+    "vite": "^6.0.5",
+    "wait-on": "^8.0.1"
+  },
+  "build": {
+    "appId": "vn.reverse1999.launcher",
+    "productName": "Reverse: 1999 Việt Hóa Launcher",
+    "directories": {
+      "output": "release"
+    },
+    "files": [
+      "dist/**/*",
+      "dist-electron/**/*",
+      "package.json"
+    ],
+    "extraResources": [
+      {
+        "from": "../6ac5a62c64b72b07e9383583eef5c3ac.dat",
+        "to": "mod/6ac5a62c64b72b07e9383583eef5c3ac.dat"
+      },
+      {
+        "from": "../7335e2dfbf8ec0e4389bc697130b63e2.dat",
+        "to": "mod/7335e2dfbf8ec0e4389bc697130b63e2.dat"
+      }
+    ],
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        }
+      ]
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true
+    }
+  }
+}
