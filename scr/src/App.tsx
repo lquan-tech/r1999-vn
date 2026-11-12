@@ -242,6 +242,39 @@ export default function App() {
     setActiveSlide((prev) => (prev + 1) % slides.length);
   };
 
+  const runInstallViethoa = async () => {
+    if (!gameDir) {
+      showToast('Chưa chọn thư mục game! Vui lòng chọn đường dẫn cài đặt Reverse: 1999.');
+      await handleSelectFolder();
+      return;
+    }
+
+    setIsInstalling(true);
+    showToast(`Đang tải & cài đặt bản dịch tiếng Việt v${remoteViethoaVersion}...`);
+
+    try {
+      if (window.launcher?.updateViethoa) {
+        const res = await window.launcher.updateViethoa(gameDir);
+        if (!res.success) {
+          showToast(res.message || 'Cài đặt bản dịch thất bại.');
+          return;
+        }
+        setInstalledViethoaVersion(res.version);
+        setViethoaNeedsUpdate(false);
+        showToast(res.message || `Cập nhật bản dịch v${res.version} thành công!`);
+      } else {
+        await new Promise((r) => setTimeout(r, 1500));
+        setInstalledViethoaVersion(remoteViethoaVersion);
+        setViethoaNeedsUpdate(false);
+        showToast(`Cập nhật bản dịch v${remoteViethoaVersion} thành công!`);
+      }
+    } catch (err: any) {
+      showToast('Lỗi cập nhật: ' + (err?.message || err));
+    } finally {
+      setIsInstalling(false);
+    }
+  };
+
   // Handle Primary CTA Button
   const handlePrimaryAction = async () => {
     // Check if game directory is chosen
@@ -252,25 +285,7 @@ export default function App() {
     }
 
     if (viethoaNeedsUpdate || installedViethoaVersion === '0.0.0') {
-      setIsInstalling(true);
-      showToast(`Đang tải & cập nhật bản dịch tiếng Việt v${remoteViethoaVersion}...`);
-
-      try {
-        if (window.launcher?.updateViethoa) {
-          const res = await window.launcher.updateViethoa(gameDir);
-          setInstalledViethoaVersion(res.version);
-        } else {
-          await new Promise((r) => setTimeout(r, 1500));
-          setInstalledViethoaVersion(remoteViethoaVersion);
-        }
-
-        setViethoaNeedsUpdate(false);
-        showToast(`Cập nhật bản dịch v${remoteViethoaVersion} thành công!`);
-      } catch (err: any) {
-        showToast('Lỗi cập nhật: ' + (err?.message || err));
-      } finally {
-        setIsInstalling(false);
-      }
+      await runInstallViethoa();
     } else {
       if (window.launcher) {
         const res = await window.launcher.launchGame(gameDir);
@@ -573,6 +588,21 @@ export default function App() {
                   onClick={async (e) => {
                     e.stopPropagation();
                     closeGearMenu();
+                    await runInstallViethoa();
+                  }}
+                >
+                  <ArrowDown size={16} />
+                  <div className="action-menu-text-col">
+                    <span className="action-menu-title">Cài lại bản Việt hóa</span>
+                    <span className="action-menu-desc">Tải & cài lại font Lora/JBM + bản dịch từ GitHub</span>
+                  </div>
+                </button>
+
+                <button
+                  className="action-menu-item"
+                  onClick={async (e) => {
+                    e.stopPropagation();
+                    closeGearMenu();
                     showToast('Đang tải và cập nhật toàn bộ tài nguyên từ GitHub...');
                     await syncFromElectron(true);
                     showToast('Đã đồng bộ lại toàn bộ tài nguyên thành công!');
@@ -770,6 +800,15 @@ export default function App() {
                     <h4 className="settings-section-title">Công cụ quản lý mod</h4>
                     <button className="btn-secondary" onClick={() => window.launcher?.openFolder(gameDir)}>
                       <Folder size={14} /> Mở thư mục tệp tin Reverse1999en
+                    </button>
+                    <button
+                      className="btn-secondary"
+                      onClick={async () => {
+                        closeSettings();
+                        await runInstallViethoa();
+                      }}
+                    >
+                      <ArrowDown size={14} /> Cài lại bản Việt hóa & Font từ GitHub
                     </button>
                     <button
                       className="btn-secondary"

@@ -443,7 +443,21 @@ ipcMain.handle('launcher:sync-assets', async (_event, force = false) => {
   if (fs.existsSync(installedVersionPath)) {
     try {
       const data = JSON.parse(fs.readFileSync(installedVersionPath, 'utf8'));
-      installedViethoaVersion = data.version || '0.0.0';
+      const activeGameDir = data.gameDir || autoDetectGameDirectory();
+      if (data.version && data.fileHashes && activeGameDir) {
+        const perRoot = path.join(activeGameDir, 'reverse1999_Data', 'StreamingAssets', 'PersistentRoot');
+        let allValid = true;
+        for (const [relPath, expectedMd5] of Object.entries(data.fileHashes as Record<string, string>)) {
+          const targetFile = path.join(perRoot, relPath.replace(/\//g, path.sep));
+          if (!fs.existsSync(targetFile) || md5FileSync(targetFile).toLowerCase() !== String(expectedMd5).toLowerCase()) {
+            allValid = false;
+            break;
+          }
+        }
+        if (allValid) {
+          installedViethoaVersion = data.version;
+        }
+      }
     } catch {}
   }
 
@@ -712,11 +726,15 @@ ipcMain.handle('launcher:update-viethoa', async (_event, gameDir: string) => {
     }
   }
 
-  // Save new installed version
+  // Save new installed version & verified file hashes
+  const fileHashes: Record<string, string> = {};
+  for (const item of stagedCopies) {
+    if (item.localhashKey) fileHashes[item.localhashKey] = item.md5;
+  }
   try {
     fs.writeFileSync(
       installedVersionPath,
-      JSON.stringify({ version: remoteVersion, installedAt: new Date().toISOString(), gameDir, downloadedCount: stagedCopies.length }, null, 2),
+      JSON.stringify({ version: remoteVersion, installedAt: new Date().toISOString(), gameDir, downloadedCount: stagedCopies.length, fileHashes }, null, 2),
       'utf8'
     );
   } catch {}
