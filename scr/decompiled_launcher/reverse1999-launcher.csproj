@@ -1,0 +1,50 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <AssemblyName>reverse1999-launcher</AssemblyName>
+    <GenerateAssemblyInfo>False</GenerateAssemblyInfo>
+    <OutputType>WinExe</OutputType>
+    <UseWindowsForms>True</UseWindowsForms>
+    <TargetFramework>net8.0-windows8.0</TargetFramework>
+  </PropertyGroup>
+  <PropertyGroup>
+    <LangVersion>14.0</LangVersion>
+    <AllowUnsafeBlocks>True</AllowUnsafeBlocks>
+    <CheckForOverflowUnderflow>False</CheckForOverflowUnderflow>
+  </PropertyGroup>
+  <PropertyGroup>
+    <ApplicationIcon>app.ico</ApplicationIcon>
+    <RootNamespace />
+  </PropertyGroup>
+  <ItemGroup>
+    <None Remove="Bluepoch.Launcher.Resources.reverse1999-icon.ico" />
+    <EmbeddedResource Include="Bluepoch.Launcher.Resources.reverse1999-icon.ico" LogicalName="Bluepoch.Launcher.Resources.reverse1999-icon.ico" />
+    <ApplicationConfig Remove="reverse1999-launcher.dll.config" />
+    <ApplicationConfig Include="reverse1999-launcher.dll.config" />
+  </ItemGroup>
+  <ItemGroup>
+    <Reference Include="Microsoft.Web.WebView2.WinForms">
+      <HintPath>..\..\..\bluepoch\reverse1999_global\Microsoft.Web.WebView2.WinForms.dll</HintPath>
+    </Reference>
+    <Reference Include="Microsoft.Web.WebView2.Core">
+      <HintPath>..\..\..\bluepoch\reverse1999_global\Microsoft.Web.WebView2.Core.dll</HintPath>
+    </Reference>
+    <Reference Include="bluepoch-common">
+      <HintPath>..\..\..\bluepoch\reverse1999_global\bluepoch-common.dll</HintPath>
+    </Reference>
+    <Reference Include="Newtonsoft.Json">
+      <HintPath>..\..\..\bluepoch\reverse1999_global\Newtonsoft.Json.dll</HintPath>
+    </Reference>
+    <Reference Include="SevenZipSharp">
+      <HintPath>..\..\..\bluepoch\reverse1999_global\SevenZipSharp.dll</HintPath>
+    </Reference>
+    <Reference Include="Microsoft.EntityFrameworkCore">
+      <HintPath>..\..\..\bluepoch\reverse1999_global\Microsoft.EntityFrameworkCore.dll</HintPath>
+    </Reference>
+    <Reference Include="Microsoft.EntityFrameworkCore.Sqlite">
+      <HintPath>..\..\..\bluepoch\reverse1999_global\Microsoft.EntityFrameworkCore.Sqlite.dll</HintPath>
+    </Reference>
+    <Reference Include="Microsoft.EntityFrameworkCore.Relational">
+      <HintPath>..\..\..\bluepoch\reverse1999_global\Microsoft.EntityFrameworkCore.Relational.dll</HintPath>
+    </Reference>
+  </ItemGroup>
+</Project>
