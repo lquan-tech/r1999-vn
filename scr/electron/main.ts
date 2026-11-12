@@ -5,6 +5,7 @@ import https from 'node:https';
 import http from 'node:http';
 import { pathToFileURL } from 'node:url';
 import { spawn, execSync } from 'node:child_process';
+import crypto from 'node:crypto';
 
 // Ensure proper Windows Taskbar grouping and application icon
 if (process.platform === 'win32') {
@@ -573,62 +574,149 @@ ipcMain.handle('launcher:sync-assets', async (_event, force = false) => {
   };
 });
 
+interface ViethoaManifestEntry {
+  repoPath: string;
+  targetRelPath: string;
+  localhashKey?: string;
+  md5?: string;
+}
+
+function md5FileSync(filePath: string): string {
+  const hash = crypto.createHash('md5');
+  hash.update(fs.readFileSync(filePath));
+  return hash.digest('hex');
+}
+
 // Install / Update Viethoa directly from public/fileviethoa folder on GitHub
 ipcMain.handle('launcher:update-viethoa', async (_event, gameDir: string) => {
   if (!gameDir || !fs.existsSync(gameDir)) {
     return { success: false, version: '0.0.0', message: 'Vui lòng chọn thư mục cài đặt game trước khi tải bản dịch!' };
   }
 
+  const persistentRoot = path.join(gameDir, 'reverse1999_Data', 'StreamingAssets', 'PersistentRoot');
+  if (!fs.existsSync(persistentRoot)) {
+    return { success: false, version: '0.0.0', message: 'Không tìm thấy PersistentRoot trong thư mục game!' };
+  }
+
   const cDir = getCacheDir();
   const installedVersionPath = path.join(cDir, 'installed_viethoa.json');
+  const stageDir = path.join(cDir, 'viethoa_stage');
+  if (!fs.existsSync(stageDir)) fs.mkdirSync(stageDir, { recursive: true });
 
-  let remoteVersion = '1.0.0';
+  let remoteVersion = '1.1.0';
   const ts = Date.now();
   try {
     const v = await fetchText(`https://raw.githubusercontent.com/lquan-tech/r1999-vn/main/public/viethoaversion.txt?t=${ts}`);
     if (v) remoteVersion = v;
   } catch {}
 
-  // Fetch file list from GitHub public/fileviethoa
-  let downloadedCount = 0;
+  let manifestEntries: ViethoaManifestEntry[] = [];
   try {
-    const apiUrl = `https://api.github.com/repos/lquan-tech/r1999-vn/contents/public/fileviethoa?t=${ts}`;
-    const filesData = await new Promise<any>((resolve) => {
-      https.get(apiUrl, { headers: { 'User-Agent': 'R1999-VietHoa-Launcher', 'Cache-Control': 'no-cache' } }, (res) => {
-        let raw = '';
-        res.on('data', (c) => (raw += c));
-        res.on('end', () => {
-          try {
-            resolve(JSON.parse(raw));
-          } catch {
-            resolve(null);
-          }
-        });
-      }).on('error', () => resolve(null));
-    });
-
-    if (Array.isArray(filesData)) {
-      for (const item of filesData) {
-        if (item.download_url && item.name !== '.gitkeep') {
-          const dest = path.join(gameDir, item.name);
-          try {
-            await downloadFile(`${item.download_url}?t=${ts}`, dest);
-            downloadedCount++;
-          } catch (e) {
-            console.error(`Failed to download ${item.name}:`, e);
-          }
-        }
-      }
+    const rawManifest = await fetchText(
+      `https://raw.githubusercontent.com/lquan-tech/r1999-vn/main/public/fileviethoa/manifest.json?t=${ts}`,
+      12000
+    );
+    const parsed = JSON.parse(rawManifest);
+    if (parsed && Array.isArray(parsed.files)) {
+      manifestEntries = parsed.files;
+      if (parsed.version) remoteVersion = String(parsed.version);
     }
   } catch (err) {
-    console.warn('Could not query public/fileviethoa:', err);
+    console.warn('Could not load public/fileviethoa/manifest.json:', err);
+  }
+
+  if (manifestEntries.length === 0) {
+    return { success: false, version: remoteVersion, message: 'Không thể tải manifest bản Việt hóa từ GitHub.' };
+  }
+
+  // 1. Download all patch files into userData staging directory
+  const stagedCopies: Array<{ src: string; dest: string; localhashKey?: string; md5: string }> = [];
+  for (const entry of manifestEntries) {
+    const relNorm = entry.targetRelPath.replace(/\//g, path.sep);
+    const stagedPath = path.join(stageDir, relNorm);
+    const stagedParent = path.dirname(stagedPath);
+    if (!fs.existsSync(stagedParent)) fs.mkdirSync(stagedParent, { recursive: true });
+
+    const rawUrl = `https://raw.githubusercontent.com/lquan-tech/r1999-vn/main/${entry.repoPath}?t=${ts}`;
+    try {
+      await downloadFile(rawUrl, stagedPath);
+      const actualMd5 = md5FileSync(stagedPath);
+      if (entry.md5 && actualMd5.toLowerCase() !== entry.md5.toLowerCase()) {
+        return { success: false, version: remoteVersion, message: `Lỗi kiểm tra MD5 cho ${entry.targetRelPath}` };
+      }
+      stagedCopies.push({
+        src: stagedPath,
+        dest: path.join(persistentRoot, relNorm),
+        localhashKey: entry.localhashKey,
+        md5: actualMd5,
+      });
+    } catch (e: any) {
+      return { success: false, version: remoteVersion, message: `Lỗi tải ${entry.targetRelPath}: ${e?.message || e}` };
+    }
+  }
+
+  // 2. Prepare updated localhash in staging if localhash exists
+  const localhashPath = path.join(persistentRoot, 'localhash');
+  const stagedLocalhash = path.join(stageDir, 'localhash.patched');
+  let hasLocalhashUpdate = false;
+  if (fs.existsSync(localhashPath)) {
+    try {
+      const lhData = JSON.parse(fs.readFileSync(localhashPath, 'utf8'));
+      for (const item of stagedCopies) {
+        if (item.localhashKey) {
+          lhData[item.localhashKey] = item.md5;
+        }
+      }
+      fs.writeFileSync(stagedLocalhash, JSON.stringify(lhData), 'utf8');
+      hasLocalhashUpdate = true;
+    } catch (e) {
+      console.warn('Could not update localhash:', e);
+    }
+  }
+
+  // 3. Copy into PersistentRoot (with automatic UAC elevation fallback for Program Files)
+  try {
+    for (const item of stagedCopies) {
+      const destParent = path.dirname(item.dest);
+      if (!fs.existsSync(destParent)) fs.mkdirSync(destParent, { recursive: true });
+      fs.copyFileSync(item.src, item.dest);
+    }
+    if (hasLocalhashUpdate) {
+      fs.copyFileSync(stagedLocalhash, localhashPath);
+    }
+  } catch (err: any) {
+    if (process.platform === 'win32' && (err?.code === 'EPERM' || err?.code === 'EACCES')) {
+      const psLines: string[] = [];
+      for (const item of stagedCopies) {
+        const dParent = path.dirname(item.dest).replace(/'/g, "''");
+        const sFile = item.src.replace(/'/g, "''");
+        const dFile = item.dest.replace(/'/g, "''");
+        psLines.push(`New-Item -ItemType Directory -Force -Path '${dParent}' | Out-Null`);
+        psLines.push(`Copy-Item -Force '${sFile}' '${dFile}'`);
+      }
+      if (hasLocalhashUpdate) {
+        psLines.push(`Copy-Item -Force '${stagedLocalhash.replace(/'/g, "''")}' '${localhashPath.replace(/'/g, "''")}'`);
+      }
+      const scriptPath = path.join(stageDir, 'apply_patch_admin.ps1');
+      fs.writeFileSync(scriptPath, psLines.join('\r\n'), 'utf8');
+      try {
+        execSync(
+          `powershell -NoProfile -Command "Start-Process powershell.exe -ArgumentList '-NoProfile -ExecutionPolicy Bypass -File \\"${scriptPath}\\"' -Verb RunAs -Wait -WindowStyle Hidden"`,
+          { encoding: 'utf8' }
+        );
+      } catch (elevErr: any) {
+        return { success: false, version: remoteVersion, message: `Cần quyền Administrator để ghi vào thư mục game: ${elevErr?.message || elevErr}` };
+      }
+    } else {
+      return { success: false, version: remoteVersion, message: `Lỗi ghi file vào game: ${err?.message || err}` };
+    }
   }
 
   // Save new installed version
   try {
     fs.writeFileSync(
       installedVersionPath,
-      JSON.stringify({ version: remoteVersion, installedAt: new Date().toISOString(), gameDir, downloadedCount }, null, 2),
+      JSON.stringify({ version: remoteVersion, installedAt: new Date().toISOString(), gameDir, downloadedCount: stagedCopies.length }, null, 2),
       'utf8'
     );
   } catch {}
@@ -636,7 +724,7 @@ ipcMain.handle('launcher:update-viethoa', async (_event, gameDir: string) => {
   return {
     success: true,
     version: remoteVersion,
-    message: `Đã cập nhật bản dịch tiếng Việt v${remoteVersion}`,
+    message: `Đã cập nhật bản dịch & font Lora/JetBrains Mono v${remoteVersion}`,
   };
 });
 

@@ -1,0 +1,31 @@
+{
+  "version": "1.1.0",
+  "fonts": [
+    "Lora",
+    "JetBrains Mono"
+  ],
+  "fontMode": "mode_b_primary_replacement",
+  "files": [
+    {
+      "repoPath": "public/fileviethoa/bundles/4cf5f0d5171875682fcbc1641c210bf0.dat",
+      "targetRelPath": "bundles/4cf5f0d5171875682fcbc1641c210bf0.dat",
+      "localhashKey": "bundles/4cf5f0d5171875682fcbc1641c210bf0.dat",
+      "md5": "a9ffc14167dd86df820540dd86efad44",
+      "size": 19140858
+    },
+    {
+      "repoPath": "public/fileviethoa/configs/language/json_language_en.json.dat",
+      "targetRelPath": "configs/language/json_language_en.json.dat",
+      "localhashKey": "configs/language/json_language_en.json.dat",
+      "md5": "7976dc425670e5cf2f6fd697865cb3e9",
+      "size": 16232032
+    },
+    {
+      "repoPath": "public/fileviethoa/configs/language/json_language_server_en.json.dat",
+      "targetRelPath": "configs/language/json_language_server_en.json.dat",
+      "localhashKey": "configs/language/json_language_server_en.json.dat",
+      "md5": "c9c280b8914640f2e83bafbdde83de91",
+      "size": 5771984
+    }
+  ]
+}

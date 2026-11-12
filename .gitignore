@@ -17,6 +17,7 @@ build/
 # Large Binaries and Mod Data (>100MB / non-source)
 *.exe
 *.dat
+!public/fileviethoa/**/*.dat
 *.bytes
 *.zip
 *.tar.gz
