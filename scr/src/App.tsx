@@ -60,6 +60,26 @@ export default function App() {
     setTimeout(() => setGearMenuState('closed'), 140);
   };
 
+  const gearMenuRef = useRef<HTMLDivElement>(null);
+  const gearBtnRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (gearMenuState !== 'open') return;
+    const handleOutsideClick = (e: MouseEvent) => {
+      const target = e.target as Node;
+      if (
+        gearMenuRef.current &&
+        !gearMenuRef.current.contains(target) &&
+        gearBtnRef.current &&
+        !gearBtnRef.current.contains(target)
+      ) {
+        closeGearMenu();
+      }
+    };
+    document.addEventListener('mousedown', handleOutsideClick);
+    return () => document.removeEventListener('mousedown', handleOutsideClick);
+  }, [gearMenuState]);
+
   const toggleGearMenu = (e: React.MouseEvent) => {
     e.stopPropagation();
     if (gearMenuState === 'open') {
@@ -290,11 +310,6 @@ export default function App() {
         </div>
       )}
 
-      {/* REQUIREMENT 4: CLICK OUTSIDE BACKDROP TO CLOSE QUICK MENU */}
-      {gearMenuState !== 'closed' && (
-        <div className="click-outside-backdrop" onClick={closeGearMenu} />
-      )}
-
       {/* BACKGROUND IMAGE (NO DRAG) & CINEMATIC FADES */}
       <div className="launcher-canvas">
         <img
@@ -518,6 +533,7 @@ export default function App() {
 
               {/* Harmonious Inset Wrench Badge without annoying tooltip */}
               <div
+                ref={gearBtnRef}
                 className="btn-inner-tool"
                 onClick={toggleGearMenu}
               >
@@ -527,12 +543,22 @@ export default function App() {
 
             {/* REQUIREMENT 4: QUICK ACTION POPOVER MENU WITH ENTER & EXIT ANIMATIONS */}
             {gearMenuState !== 'closed' && (
-              <div className={`quick-action-menu ${gearMenuState === 'closing' ? 'closing' : ''}`}>
+              <div
+                ref={gearMenuRef}
+                className={`quick-action-menu ${gearMenuState === 'closing' ? 'closing' : ''}`}
+                onClick={(e) => e.stopPropagation()}
+              >
                 <button
                   className="action-menu-item"
-                  onClick={() => {
+                  onClick={(e) => {
+                    e.stopPropagation();
                     closeGearMenu();
-                    window.launcher?.openFolder(gameDir);
+                    if (gameDir) {
+                      window.launcher?.openFolder(gameDir);
+                    } else {
+                      showToast('Chưa chọn thư mục game! Vui lòng chọn thư mục cài đặt.');
+                      handleSelectFolder();
+                    }
                   }}
                 >
                   <Folder size={16} />
@@ -544,9 +570,10 @@ export default function App() {
 
                 <button
                   className="action-menu-item"
-                  onClick={async () => {
+                  onClick={async (e) => {
+                    e.stopPropagation();
                     closeGearMenu();
-                    showToast('Đang tải lại toàn bộ tài nguyên từ GitHub...');
+                    showToast('Đang tải và cập nhật toàn bộ tài nguyên từ GitHub...');
                     await syncFromElectron(true);
                     showToast('Đã đồng bộ lại toàn bộ tài nguyên thành công!');
                   }}
@@ -560,7 +587,8 @@ export default function App() {
 
                 <button
                   className="action-menu-item"
-                  onClick={() => {
+                  onClick={(e) => {
+                    e.stopPropagation();
                     closeGearMenu();
                     openSettings();
                   }}

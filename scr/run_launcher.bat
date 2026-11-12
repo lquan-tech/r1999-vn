@@ -8,9 +8,9 @@ echo   KHOI DONG REVERSE: 1999 VIET HOA LAUNCHER
 echo ========================================================
 echo.
 
-if exist "%~dp0release\win-unpacked\Reverse 1999 Việt Hóa Launcher.exe" (
-    echo Dang khoi chay ban da dong goi...
-    start "" "%~dp0release\win-unpacked\Reverse 1999 Việt Hóa Launcher.exe"
+for %%F in ("%~dp0release\win-unpacked\*.exe") do (
+    echo Dang khoi chay ban da dong goi: %%~nxF...
+    start "" "%%~fF"
     exit /b 0
 )
 

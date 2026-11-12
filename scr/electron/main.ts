@@ -492,16 +492,13 @@ ipcMain.handle('launcher:sync-assets', async (_event, force = false) => {
 
   // Download additional UI assets from repo
   const assetsToSync = [
-    { name: 'bgimage.png', url: 'https://raw.githubusercontent.com/lquan-tech/r1999-vn/main/public/bgimage.png' },
-    { name: 'BGM.mp3', url: 'https://raw.githubusercontent.com/lquan-tech/r1999-vn/main/public/BGM.mp3' },
-    { name: 'banner1.png', url: 'https://raw.githubusercontent.com/lquan-tech/r1999-vn/main/public/banner1.png' },
-    { name: 'banner2.png', url: 'https://raw.githubusercontent.com/lquan-tech/r1999-vn/main/public/banner2.png' },
-    { name: 'banner3.png', url: 'https://raw.githubusercontent.com/lquan-tech/r1999-vn/main/public/banner3.png' },
-    { name: 'banner1text.txt', url: 'https://raw.githubusercontent.com/lquan-tech/r1999-vn/main/public/banner1text.txt' },
-    { name: 'banner2text.txt', url: 'https://raw.githubusercontent.com/lquan-tech/r1999-vn/main/public/banner2text.txt' },
-    { name: 'banner3text.txt', url: 'https://raw.githubusercontent.com/lquan-tech/r1999-vn/main/public/banner3text.txt' },
-    { name: 'news.txt', url: 'https://raw.githubusercontent.com/lquan-tech/r1999-vn/main/public/news.txt' },
-    { name: 'notices.txt', url: 'https://raw.githubusercontent.com/lquan-tech/r1999-vn/main/public/notices.txt' },
+    { name: 'bgimage.png', url: 'https://raw.githubusercontent.com/lquan-tech/r1999-vn/main/public/image/bgimage.png' },
+    { name: 'BGM.mp3', url: 'https://raw.githubusercontent.com/lquan-tech/r1999-vn/main/public/audio/BGM.mp3' },
+    { name: 'banner1.png', url: 'https://raw.githubusercontent.com/lquan-tech/r1999-vn/main/public/image/banner1.png' },
+    { name: 'banner2.png', url: 'https://raw.githubusercontent.com/lquan-tech/r1999-vn/main/public/image/banner2.png' },
+    { name: 'banner3.png', url: 'https://raw.githubusercontent.com/lquan-tech/r1999-vn/main/public/image/banner3.png' },
+    { name: 'news.txt', url: 'https://raw.githubusercontent.com/lquan-tech/r1999-vn/main/public/news/news.txt' },
+    { name: 'notices.txt', url: 'https://raw.githubusercontent.com/lquan-tech/r1999-vn/main/public/news/notices.txt' },
   ];
 
   await Promise.allSettled(
@@ -664,6 +661,28 @@ app.whenReady().then(() => {
     return new Response('Not found', { status: 404 });
   });
 
+  function ensureStartMenuShortcut() {
+    if (process.platform !== 'win32') return;
+    try {
+      const startMenu = path.join(app.getPath('appData'), 'Microsoft/Windows/Start Menu/Programs');
+      const shortcutPath = path.join(startMenu, 'Reverse 1999 Việt Hóa Launcher.lnk');
+      const iconInfo = getAppIcon();
+      const iconPath = iconInfo?.path || path.join(process.resourcesPath, 'reverse1999-icon.ico');
+
+      shell.writeShortcutLink(shortcutPath, 'create', {
+        target: process.execPath,
+        args: app.isPackaged ? '' : `"${app.getAppPath()}"`,
+        description: 'Reverse: 1999 Việt Hóa Launcher',
+        icon: iconPath,
+        iconIndex: 0,
+        appUserModelId: 'vn.reverse1999.launcher',
+      });
+    } catch (err) {
+      console.warn('Could not register shortcut:', err);
+    }
+  }
+
+  ensureStartMenuShortcut();
   createWindow();
 
   app.on('activate', () => {
