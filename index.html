@@ -22,6 +22,15 @@
 html{scroll-behavior:smooth}
 body{font-family:var(--sans);background:var(--night);color:var(--cream);line-height:1.6}
 a{color:inherit}
+
+/* Thanh cuộn */
+html{background:var(--night)}
+::selection{background:var(--gold);color:#231a08}
+::-webkit-scrollbar{width:12px}
+::-webkit-scrollbar-track{background:var(--night)}
+::-webkit-scrollbar-thumb{background:linear-gradient(180deg,var(--gold2),var(--gold));border-radius:8px;border:3px solid var(--night);min-height:48px}
+::-webkit-scrollbar-thumb:hover{background:var(--gold2)}
+@supports not selector(::-webkit-scrollbar){html{scrollbar-width:thin;scrollbar-color:var(--gold) var(--night)}}
 a:focus-visible,summary:focus-visible{outline:2px solid var(--gold2);outline-offset:3px}
 
 /* ===== Màn hình chính ===== */
